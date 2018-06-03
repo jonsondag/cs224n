@@ -21,6 +21,9 @@ class PartialParse(object):
         self.sentence = sentence
 
         ### YOUR CODE HERE
+        self.stack = ['ROOT']
+        self.buffer = sentence
+        self.dependencies = []
         ### END YOUR CODE
 
     def parse_step(self, transition):
@@ -31,6 +34,21 @@ class PartialParse(object):
                         and right-arc transitions.
         """
         ### YOUR CODE HERE
+        if transition == 'S':
+            self.stack.append(self.buffer[0])
+            self.buffer = self.buffer[1:]
+        elif transition == 'LA':
+            head = self.stack[-1]
+            dependent = self.stack[-2]
+            del self.stack[-2]
+            self.dependencies.append((head, dependent))
+        elif transition == 'RA':
+            head = self.stack[-2]
+            dependent = self.stack[-1]
+            del self.stack[-1]
+            self.dependencies.append((head, dependent))
+        else:
+            raise ValueError('transition string must have value R, LA, or RA')
         ### END YOUR CODE
 
     def parse(self, transitions):
@@ -65,8 +83,21 @@ def minibatch_parse(sentences, model, batch_size):
     """
 
     ### YOUR CODE HERE
+    partial_parses = [PartialParse(sentence) for sentence in sentences]
+    unfinished_parses = list(partial_parses)
+    while unfinished_parses:
+        minibatch_parses = unfinished_parses[:batch_size]
+        transitions = model.predict(minibatch_parses)
+        [minibatch_parses[idx].parse_step(transitions[idx]) for idx in range(len(minibatch_parses))]
+        indices_to_remove = []
+        for idx in range(len(minibatch_parses)):
+            parse = unfinished_parses[idx]
+            if len(parse.stack) == 1 and len(parse.buffer) == 0:
+                indices_to_remove.append(idx)
+        for idx in reversed(indices_to_remove):
+            del unfinished_parses[idx]
+    dependencies = [partial_parse.dependencies for partial_parse in partial_parses]
     ### END YOUR CODE
-
     return dependencies
 
 
