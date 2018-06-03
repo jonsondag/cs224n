@@ -36,11 +36,22 @@ def forward_backward_prop(data, labels, params, dimensions):
     b2 = np.reshape(params[ofs:ofs + Dy], (1, Dy))
 
     ### YOUR CODE HERE: forward propagation
-    raise NotImplementedError
+    z2 = np.dot(data, W1) + b1  # M x H  (b1 will be broadcast to M x H)
+    h = sigmoid(z2)   # M x H
+    z3 = np.dot(h, W2) + b2  # M x Dy   (b2 will be broadcast to M x Dy)
+    y_hat = softmax(z3)  # M x Dy
+    cost = -np.sum(labels * np.log(y_hat))  # float
     ### END YOUR CODE
 
     ### YOUR CODE HERE: backward propagation
-    raise NotImplementedError
+    delta3 = y_hat - labels
+    # calculate outer(h, delta3) for each of the M training examples and sum
+    gradW2 = np.einsum('ij,ik->jk', h, delta3)  # H x Dy
+    gradb2 = delta3.sum(axis=0)  # Dy x 1
+    delta2 = np.dot(delta3, W2.T) * sigmoid_grad(h)  # M x H
+    # calculate outer(x, delta2) for each of the M training examples and sum
+    gradW1 = np.einsum('ij,ik->jk', data, delta2)  # Dx x H
+    gradb1 = delta2.sum(axis=0)  # H x 1
     ### END YOUR CODE
 
     ### Stack gradients (do not modify)
@@ -80,7 +91,7 @@ def your_sanity_checks():
     """
     print "Running your sanity checks..."
     ### YOUR CODE HERE
-    raise NotImplementedError
+    pass
     ### END YOUR CODE
 
 
